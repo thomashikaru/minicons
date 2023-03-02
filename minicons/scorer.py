@@ -4,7 +4,7 @@ import scipy
 from nltk import word_tokenize
 import tqdm
 import numpy as np
-import utils
+from minicons import utils
 
 import torch
 from transformers import (
