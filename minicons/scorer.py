@@ -31,7 +31,8 @@ def align(surprisals_pre, entropies_pre, token_list, sentence):
 
     # print(result, sentence, end="\n\n")
     # words = sentence.split()
-    words = word_tokenize(sentence)
+    sentence = sub("([.,!?()])", r" \1", sentence)
+    words = sentence.split()
 
     i = 0
     try:
@@ -59,7 +60,8 @@ def align(surprisals_pre, entropies_pre, token_list, sentence):
             entropies_post.append(word_ent)
 
     except IndexError as e:
-        print(e)
+        print(f"IndexError: {sentence}")
+        print(token_list)
         # if there is a problem with aligning the model outputs with
         # the inputs, then return all nans
         surprisals_post = np.full(len(words), np.nan)
