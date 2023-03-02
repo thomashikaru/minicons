@@ -1242,10 +1242,12 @@ class IncrementalLMScorer(LMScorer):
         else:
             return scores, entropies
 
-    def get_surprisals_and_entropies(self, sentences):
+    def get_surprisals_and_entropies(self, sentences, base_two=True):
         tokenized = self.prepare_text(sentences)
         encoded, offsets = tokenized
-        scores, entropies, ranks = self.compute_stats(tokenized, rank=True)
+        scores, entropies, ranks = self.compute_stats(
+            tokenized, rank=True, base_two=base_two
+        )
 
         words_aligned, scores_aligned, entropies_aligned = [], [], []
 
