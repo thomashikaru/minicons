@@ -1157,7 +1157,7 @@ class IncrementalLMScorer(LMScorer):
         effective_ids = [id[1:] for id in ids]
 
         with torch.no_grad():
-            logits = self.model(**encoded).logits.detach()
+            logits = self.model(**encoded).logits.detach().cpu()
 
         # print("Original logits shape:", logits.shape)
 
