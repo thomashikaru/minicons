@@ -1188,21 +1188,21 @@ class IncrementalLMScorer(LMScorer):
                     logprob_distribution[torch.arange(length - offset), query_ids]
                     / torch.tensor(2).log()
                 )
-                score = torch.concat((torch.full((1,), float("nan")), score))
+                score = torch.cat((torch.full((1,), float("nan")), score))
                 score = score.tolist()
             else:
                 if prob:
                     score = logprob_distribution[
                         torch.arange(length - offset), query_ids
                     ].exp()
-                    score = torch.concat((torch.full((1,), float("nan")), score))
+                    score = torch.cat((torch.full((1,), float("nan")), score))
                     score = score.tolist()
 
                 else:
                     score = logprob_distribution[
                         torch.arange(length - offset), query_ids
                     ]
-                    score = torch.concat((torch.full((1,), float("nan")), score))
+                    score = torch.cat((torch.full((1,), float("nan")), score))
                     score = score.tolist()
 
             logprob_distribution2 = logit2 - logit2.logsumexp(1).unsqueeze(1)
@@ -1229,7 +1229,7 @@ class IncrementalLMScorer(LMScorer):
                 # inv_ranks = logprob_distribution.argsort().argsort() + 1
                 # word_ranks = shape[1] - inv_ranks + 1
                 word_ranks = word_ranks[torch.arange(length - offset), query_ids]
-                word_ranks = torch.concat((torch.full((1,), float("nan")), word_ranks))
+                word_ranks = torch.cat((torch.full((1,), float("nan")), word_ranks))
                 word_ranks = word_ranks.tolist()
                 ranks.append(word_ranks)
 
