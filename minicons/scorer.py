@@ -27,6 +27,14 @@ set_verbosity_error()
 
 def align(surprisals_pre, entropies_pre, token_list, sentence):
 
+    # assert len(token_list) == len(
+    #     entropies_pre
+    # ), f"{len(token_list)}, {len(entropies_pre)}"
+
+    # assert len(token_list) == len(
+    #     surprisals_pre
+    # ), f"{len(token_list)}, {len(surprisals_pre)}"
+
     surprisals_post, entropies_post = [], []
 
     # print(result, sentence, end="\n\n")
@@ -46,6 +54,10 @@ def align(surprisals_pre, entropies_pre, token_list, sentence):
             word_surp = 0
             word_ent = 0
             while s != word:
+                if i >= len(token_list):
+                    raise IndexError(
+                        f"s: {s}, word: {word}, token_list[-1]: {token_list[-1]}"
+                    )
                 s += token_list[i]
 
                 # add a space if required: necessary because the model outputs
@@ -1207,11 +1219,8 @@ class IncrementalLMScorer(LMScorer):
 
             logprob_distribution2 = logit2 - logit2.logsumexp(1).unsqueeze(1)
             # print("logprob dist 2 shape:", logprob_distribution2.shape)
-            entropy = list(
-                scipy.stats.entropy(
-                    logprob_distribution2.exp().sort().values[-100:], axis=1,
-                )
-            )
+            entropy = list(scipy.stats.entropy(logprob_distribution2.exp(), axis=1,))
+            # print(len(entropy))
 
             if rank:
                 # shape = logprob_distribution.shape
