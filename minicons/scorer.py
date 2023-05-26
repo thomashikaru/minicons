@@ -40,6 +40,8 @@ def align(surprisals_pre, entropies_pre, token_list, sentence):
     # print(result, sentence, end="\n\n")
     # words = sentence.split()
     sentence = sub("([.,!?()])", r" \1", sentence)
+    sentence = sentence.replace("<|startoftext|>", "<|startoftext|> ")
+    sentence = sentence.replace("<|endoftext|>", " <|endoftext|>")
     words = sentence.split()
 
     i = 0
