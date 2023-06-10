@@ -1187,8 +1187,10 @@ class IncrementalLMScorer(LMScorer):
 
         for logit, idx, offset in zip(logits, effective_ids, offsets):
             length = len(idx)
-            logit1 = logit.squeeze(0)[:, :-1]
-            logit2 = logit.squeeze(0)[:, :-1]
+            # logit1 = logit.squeeze(0)[:, :-1]
+            # logit2 = logit.squeeze(0)[:, :-1]
+            logit1 = logit.squeeze(0)
+            logit2 = logit.squeeze(0)
 
             logprob_distribution = logit1 - logit1.logsumexp(1).unsqueeze(1)
             # print("logprob dist 1 shape:", logprob_distribution.shape)
