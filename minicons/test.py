@@ -21,16 +21,13 @@ if __name__ == "__main__":
     model = IncrementalLMScorer("gpt2", "cpu", 1)
 
     texts = [
-        "It's 7:00 a.m. and 20,000 loud, angry people were there.",
-        "It's 7:00 a.m. and 20,000 loud and angry people were there.",
-        "I went to the supermarket to buy a loaf of bread",
-        "I went to the supermarket to buy a loaf of cheese",
-        "He saw a bird",
-        "She saw a bird",
+        "Yes it's 7:00 a.m. and 20,000 loud, angry people were there.",
+        "Yes it's 7:00 a.m. and 20,000 loud and angry people were there.",
+        "I went to the supermarket to buy a gallon of skim milk for breakfast",
+        "I went to the supermarket to buy a gallon of skim water for breakfast",
+        "He comes from Puerto Rico and is a surfer",
+        "He comes from Puerto Joe and is a surfer",
     ]
-
-    # texts = list(map(lambda x: " ".join(word_tokenize(x)), texts))
-    # texts = ["<|startoftext|>" + txt + "<|endoftext|>" for txt in texts]
 
     texts = model.add_special_tokens(texts)
 

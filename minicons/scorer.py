@@ -83,12 +83,12 @@ class LMScorer:
             # iterate over words/tokens in the original sentence
             for word in words:
 
-                # need to align model outputs with original inputs
                 # build up the original input from the outputs
-                # while agreggating surprisals additively
+                # aggregate surprisals additively
+                # for entropies of multi-token words, just take the first
                 s = ""
-                word_surp = 0
-                word_ent = 0
+                incremental_word_surp = []
+                incremental_word_ent = []
                 while s != word:
                     if i >= len(token_list):
                         raise IndexError(
@@ -96,16 +96,15 @@ class LMScorer:
                         )
                     s += token_list[i]
 
-                    # add a space if required: necessary because the model outputs
-                    # don't retain spaces
+                    # add a space if required: necessary because the model outputs don't retain spaces
                     if utils.remove_prefix(word, s).startswith(" "):
                         s += " "
 
-                    word_surp += surprisals_pre[i]
-                    word_ent += entropies_pre[i]
+                    incremental_word_surp.append(surprisals_pre[i])
+                    incremental_word_ent.append(entropies_pre[i])
                     i += 1
-                surprisals_post.append(word_surp)
-                entropies_post.append(word_ent)
+                surprisals_post.append(sum(incremental_word_surp))
+                entropies_post.append(incremental_word_ent[0])
 
         except IndexError as e:
             print(f"IndexError: {sentence}")
@@ -119,18 +118,8 @@ class LMScorer:
 
     def align(self, surprisals_pre, entropies_pre, token_list, sentence):
 
-        # assert len(token_list) == len(
-        #     entropies_pre
-        # ), f"{len(token_list)}, {len(entropies_pre)}"
-
-        # assert len(token_list) == len(
-        #     surprisals_pre
-        # ), f"{len(token_list)}, {len(surprisals_pre)}"
-
         surprisals_post, entropies_post = [], []
 
-        # print(result, sentence, end="\n\n")
-        # words = sentence.split()
         sentence = sub("([.,!?()])", r" \1", sentence)
         sentence = sentence.replace("<|startoftext|>", "<|startoftext|> ")
         sentence = sentence.replace("<|endoftext|>", " <|endoftext|>")
