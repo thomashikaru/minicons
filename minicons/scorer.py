@@ -5,7 +5,6 @@ from nltk import word_tokenize
 import tqdm
 import numpy as np
 from minicons import utils
-
 import torch
 from transformers import (
     AutoModelForCausalLM,
@@ -14,74 +13,35 @@ from transformers import (
     AutoTokenizer,
 )
 from transformers.utils.logging import set_verbosity_error
-
 from collections import defaultdict
-
 from itertools import chain
 from re import sub
-
 import warnings
+from icecream import ic
 
 set_verbosity_error()
 
 
-def align(surprisals_pre, entropies_pre, token_list, sentence):
+TOKEN_OPTIONS = [1]
+"""
+Option 1
+----------
+whitespace-separated tokens
+It's seven a.m. and 20,000 loud, angry people were there. ->
+It's seven a.m. and 20,000 loud, angry people were there.
 
-    # assert len(token_list) == len(
-    #     entropies_pre
-    # ), f"{len(token_list)}, {len(entropies_pre)}"
+Option 2
+----------
+separate all punctuation
+It's seven a.m. and 20,000 loud, angry people were there. ->
+It ' s seven a . m . and 20 , 000 loud , angry people were there .
 
-    # assert len(token_list) == len(
-    #     surprisals_pre
-    # ), f"{len(token_list)}, {len(surprisals_pre)}"
-
-    surprisals_post, entropies_post = [], []
-
-    # print(result, sentence, end="\n\n")
-    # words = sentence.split()
-    sentence = sub("([.,!?()])", r" \1", sentence)
-    sentence = sentence.replace("<|startoftext|>", "<|startoftext|> ")
-    sentence = sentence.replace("<|endoftext|>", " <|endoftext|>")
-    words = sentence.split()
-
-    i = 0
-    try:
-        # iterate over words/tokens in the original sentence
-        for word in words:
-
-            # need to align model outputs with original inputs
-            # build up the original input from the outputs
-            # while agreggating surprisals additively
-            s = ""
-            word_surp = 0
-            word_ent = 0
-            while s != word:
-                if i >= len(token_list):
-                    raise IndexError(
-                        f"s: {s}, word: {word}, token_list[-1]: {token_list[-1]}"
-                    )
-                s += token_list[i]
-
-                # add a space if required: necessary because the model outputs
-                # don't retain spaces
-                if utils.remove_prefix(word, s).startswith(" "):
-                    s += " "
-
-                word_surp += surprisals_pre[i]
-                word_ent += entropies_pre[i]
-                i += 1
-            surprisals_post.append(word_surp)
-            entropies_post.append(word_ent)
-
-    except IndexError as e:
-        print(f"IndexError: {sentence}")
-        print(token_list)
-        # if there is a problem with aligning the model outputs with
-        # the inputs, then return all nans
-        surprisals_post = np.full(len(words), np.nan)
-        entropies_post = np.full(len(words), np.nan)
-
-    return words, surprisals_post, entropies_post
+Option 3
+----------
+separate non-word-internal punctuation
+It's seven a.m. and 20,000 loud, angry people were there. ->
+It's seven a.m . and 20,000 loud , angry people were there .
+"""
 
 
 class LMScorer:
@@ -108,6 +68,112 @@ class LMScorer:
             decoded = [(self.tokenizer.decode(i), i)]
             for x, j in decoded:
                 self.vocab[x.strip()].append(j)
+
+    def align1(self, surprisals_pre, entropies_pre, token_list, sentence):
+
+        sentence = sentence.replace(
+            self.tokenizer.bos_token, self.tokenizer.bos_token + " "
+        )
+
+        surprisals_post, entropies_post = [], []
+        words = sentence.split()
+
+        i = 0
+        try:
+            # iterate over words/tokens in the original sentence
+            for word in words:
+
+                # need to align model outputs with original inputs
+                # build up the original input from the outputs
+                # while agreggating surprisals additively
+                s = ""
+                word_surp = 0
+                word_ent = 0
+                while s != word:
+                    if i >= len(token_list):
+                        raise IndexError(
+                            f"s: {s}, word: {word}, token_list[-1]: {token_list[-1]}"
+                        )
+                    s += token_list[i]
+
+                    # add a space if required: necessary because the model outputs
+                    # don't retain spaces
+                    if utils.remove_prefix(word, s).startswith(" "):
+                        s += " "
+
+                    word_surp += surprisals_pre[i]
+                    word_ent += entropies_pre[i]
+                    i += 1
+                surprisals_post.append(word_surp)
+                entropies_post.append(word_ent)
+
+        except IndexError as e:
+            print(f"IndexError: {sentence}")
+            print(token_list)
+            # if there is a problem with aligning the model outputs with
+            # the inputs, then return all nans
+            surprisals_post = np.full(len(words), np.nan)
+            entropies_post = np.full(len(words), np.nan)
+
+        return words, surprisals_post, entropies_post
+
+    def align(self, surprisals_pre, entropies_pre, token_list, sentence):
+
+        # assert len(token_list) == len(
+        #     entropies_pre
+        # ), f"{len(token_list)}, {len(entropies_pre)}"
+
+        # assert len(token_list) == len(
+        #     surprisals_pre
+        # ), f"{len(token_list)}, {len(surprisals_pre)}"
+
+        surprisals_post, entropies_post = [], []
+
+        # print(result, sentence, end="\n\n")
+        # words = sentence.split()
+        sentence = sub("([.,!?()])", r" \1", sentence)
+        sentence = sentence.replace("<|startoftext|>", "<|startoftext|> ")
+        sentence = sentence.replace("<|endoftext|>", " <|endoftext|>")
+        words = sentence.split()
+
+        i = 0
+        try:
+            # iterate over words/tokens in the original sentence
+            for word in words:
+
+                # need to align model outputs with original inputs
+                # build up the original input from the outputs
+                # while agreggating surprisals additively
+                s = ""
+                word_surp = 0
+                word_ent = 0
+                while s != word:
+                    if i >= len(token_list):
+                        raise IndexError(
+                            f"s: {s}, word: {word}, token_list[-1]: {token_list[-1]}"
+                        )
+                    s += token_list[i]
+
+                    # add a space if required: necessary because the model outputs
+                    # don't retain spaces
+                    if utils.remove_prefix(word, s).startswith(" "):
+                        s += " "
+
+                    word_surp += surprisals_pre[i]
+                    word_ent += entropies_pre[i]
+                    i += 1
+                surprisals_post.append(word_surp)
+                entropies_post.append(word_ent)
+
+        except IndexError as e:
+            print(f"IndexError: {sentence}")
+            print(token_list)
+            # if there is a problem with aligning the model outputs with
+            # the inputs, then return all nans
+            surprisals_post = np.full(len(words), np.nan)
+            entropies_post = np.full(len(words), np.nan)
+
+        return words, surprisals_post, entropies_post
 
     def add_special_tokens(self, text: Union[str, List[str]]) -> Union[str, List[str]]:
         raise NotImplementedError
@@ -965,7 +1031,9 @@ class IncrementalLMScorer(LMScorer):
     :type device: str, optional
     """
 
-    def __init__(self, model_name: str, device: Optional[str] = "cpu") -> None:
+    def __init__(
+        self, model_name: str, device: Optional[str] = "cpu", token_option: int = 1
+    ) -> None:
         """
         :param model_name: name of the model, should either be a path
             to a model (.pt or .bin file) stored locally, or a
@@ -979,6 +1047,7 @@ class IncrementalLMScorer(LMScorer):
         super(IncrementalLMScorer, self).__init__(model_name, device)
 
         self.model = AutoModelForCausalLM.from_pretrained(model_name, return_dict=True)
+        self.token_option = token_option
 
         # define CLS and SEP tokens
         if self.tokenizer.pad_token is None:
@@ -1200,7 +1269,7 @@ class IncrementalLMScorer(LMScorer):
                 """
                 Log_2(X) = log_e(X)/log_e(2) (broadcasted)
                 """
-                score = (
+                score = -1 * (
                     logprob_distribution[torch.arange(length - offset), query_ids]
                     / torch.tensor(2).log()
                 )
@@ -1215,19 +1284,21 @@ class IncrementalLMScorer(LMScorer):
                     score = score.tolist()
 
                 else:
-                    score = logprob_distribution[
-                        torch.arange(length - offset), query_ids
-                    ]
+                    score = -1 * (
+                        logprob_distribution[torch.arange(length - offset), query_ids]
+                    )
                     score = torch.cat((torch.full((1,), float("nan")), score))
                     score = score.tolist()
 
-            logprob_distribution2 = logit2 - logit2.logsumexp(1).unsqueeze(1)
-            # print("logprob dist 2 shape:", logprob_distribution2.shape)
-            entropy = list(scipy.stats.entropy(logprob_distribution2.exp(), axis=1,))
-            # print(len(entropy))
+            logprob_distribution2 = (logit2 - logit2.logsumexp(1).unsqueeze(1))[
+                torch.arange(length - offset), :
+            ]
+            entropy = torch.tensor(
+                scipy.stats.entropy(logprob_distribution2.exp(), axis=1,)
+            )
+            entropy = torch.cat((torch.full((1,), float("nan")), entropy)).tolist()
 
             if rank:
-                # shape = logprob_distribution.shape
                 """
                 Double argsort trick:
                 first argsort returns idxes of values that would return a sorted tensor,
@@ -1260,9 +1331,7 @@ class IncrementalLMScorer(LMScorer):
     def get_surprisals_and_entropies(self, sentences, base_two=True):
         tokenized = self.prepare_text(sentences)
         encoded, offsets = tokenized
-        scores, entropies, ranks = self.compute_stats(
-            tokenized, rank=True, base_two=base_two
-        )
+        scores, entropies = self.compute_stats(tokenized, rank=False, base_two=base_two)
 
         words_aligned, scores_aligned, entropies_aligned = [], [], []
 
@@ -1273,7 +1342,11 @@ class IncrementalLMScorer(LMScorer):
         for score, entropy, token_list, sentence in zip(
             scores, entropies, token_lists, sentences
         ):
-            a, b, c = align(score, entropy, token_list, sentence)
+            # ic(len(score), len(entropy))
+            if self.token_option == 1:
+                a, b, c = self.align1(score, entropy, token_list, sentence)
+            else:
+                a, b, c = self.align(score, entropy, token_list, sentence)
             words_aligned.append(a)
             scores_aligned.append(b)
             entropies_aligned.append(c)
