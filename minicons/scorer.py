@@ -1021,7 +1021,11 @@ class IncrementalLMScorer(LMScorer):
     """
 
     def __init__(
-        self, model_name: str, device: Optional[str] = "cpu", token_option: int = 1
+        self,
+        model_name: str,
+        device: Optional[str] = "cpu",
+        token_option: int = 1,
+        **kwargs,
     ) -> None:
         """
         :param model_name: name of the model, should either be a path
@@ -1035,7 +1039,9 @@ class IncrementalLMScorer(LMScorer):
         """
         super(IncrementalLMScorer, self).__init__(model_name, device)
 
-        self.model = AutoModelForCausalLM.from_pretrained(model_name, return_dict=True)
+        self.model = AutoModelForCausalLM.from_pretrained(
+            model_name, return_dict=True, **kwargs
+        )
         self.token_option = token_option
 
         # define CLS and SEP tokens
