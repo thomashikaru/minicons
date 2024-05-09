@@ -50,7 +50,9 @@ class LMScorer:
     with methods to facilitate the analysis of language model output scores.
     """
 
-    def __init__(self, model_name: str, device: Optional[str] = "cpu") -> None:
+    def __init__(
+        self, model_name: str, device: Optional[str] = "cpu", **kwargs
+    ) -> None:
         """
         :param model_name: name of the model, should either be a path
             to a model (.pt or .bin file) stored locally, or a
@@ -60,7 +62,9 @@ class LMScorer:
             options: `cpu or cuda:{0, 1, ...}`
         :type device: str, optional
         """
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            model_name, use_fast=True, **kwargs
+        )
         self.device = device
         self.vocab = defaultdict(list)
         # {self.vocab[x.strip()].append(i) for x, i in [(self.tokenizer.decode([i]), i) for i in range(self.tokenizer.vocab_size)]}
